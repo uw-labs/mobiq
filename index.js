@@ -40,6 +40,10 @@ const check = (label) => {
     }
 }
 
+function getInt(val) {
+    return parseInt(val)
+}
+
 program
     .name(package.name)
     .version(package.version)
@@ -47,7 +51,7 @@ program
     .option('-c, --db-collection <collection>', 'collection to dump')
     .option('--db-query [query]', 'query for .find()')
     .option('--db-skip [skip]', 'number of records to skip', parseInt, 0)
-    .option('--db-batch [batch]', 'cursor batch size', parseInt, 1000)
+    .option('--db-batch [batch]', 'cursor batch size', getInt, 1000)
     .option('-p, --bq-project <project>', 'big query project name')
     .option('-s, --bq-dataset <dataset>', 'big query data set')
     .option('-t, --bq-table [table]', 'big query table, defaults to --db-collection', '')

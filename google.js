@@ -135,12 +135,14 @@ module.exports = (project, credentialsFile) => {
 
     const credStore = JSON.parse(fs.readFileSync(credentialsFile, 'utf8'))
 
-    let user
+    let user = credentialsFile
 
     if (credStore.client_email) {
         user = credStore.client_email
-    } else {
+    } else if (credStore.data && credStore.data[0]) {
         user = credStore.data[0].credential.id_token.email
+    } else if (credStore.client_id) {
+        user = credStore.client_id
     }
 
     return new Google(project, credentialsFile, user)
