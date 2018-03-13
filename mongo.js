@@ -13,8 +13,8 @@ class Mongo {
         return this.collection.count(query, {skip})
     }
 
-    stream(query, skip, batch) {
-        return this.collection.find(query, {skip}).batchSize(batch)
+    stream(query, skip, batch, limit) {
+        return this.collection.find(query, {skip, limit}).batchSize(batch)
     }
 }
 

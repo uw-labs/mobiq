@@ -50,6 +50,7 @@ program
     .option('-d, --db <dsn>', 'mongo DB DSN')
     .option('-c, --db-collection <collection>', 'collection to dump')
     .option('--db-query [query]', 'query for .find()')
+    .option('--db-limit [limit]', 'record limit', parseInt)
     .option('--db-skip [skip]', 'number of records to skip', parseInt, 0)
     .option('--db-batch [batch]', 'cursor batch size', getInt, 1000)
     .option('-p, --bq-project <project>', 'big query project name')
@@ -90,7 +91,7 @@ function exit(e) {
         logger(`${chalk.blue(package.name)} - ${chalk.green(package.version)}`)
         logger()
 
-        const {dbQuery, dbSkip, dbBatch, dbCollection} = program
+        const {dbQuery, dbSkip, dbBatch, dbCollection, dbLimit} = program
 
         check(`checking connection to ${chalk.blue(program.db)}`)
         const db = await mongo(program.db, dbCollection)
@@ -98,6 +99,7 @@ function exit(e) {
 
         label('query:', dbQuery || '{}')
         label('skip:', dbSkip)
+        label('limit:', dbLimit)
         label('batch:', dbBatch)
 
         const rowCount = await db.rowCount(dbQuery, dbSkip)
@@ -127,7 +129,7 @@ function exit(e) {
 
         logger()
 
-        stream = db.stream(dbQuery, dbSkip, dbBatch)
+        stream = db.stream(dbQuery, dbSkip, dbBatch, dbLimit)
 
         await new Promise(r => {
 
