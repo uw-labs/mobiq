@@ -4,7 +4,7 @@ const { Transform } = require('stream');
 const removeEmpty = (obj) => {
     Object.keys(obj).forEach(key => {
         if (obj[key] && typeof obj[key] === 'object') {
-            if (!Object.keys(obj[key]).length) {
+            if (!Array.isArray(obj[key]) && !Object.keys(obj[key]).length) {
                 delete obj[key];
             } else {
                 removeEmpty(obj[key]);
