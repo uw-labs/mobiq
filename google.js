@@ -73,9 +73,6 @@ class SchemaStream extends Writable {
     }
 }
 
-const emptyTarget = value => Array.isArray(value) ? [] : {}
-const clone = (value, options) => merge(emptyTarget(value), value, options)
-
 function arrayMerge(target, source, options) {
 
     let destination = target.slice().concat(source)
@@ -121,6 +118,7 @@ class Schema {
         const chunkCopy = Object.assign({}, chunk)
 
         mapTypes(chunkCopy)
+
 
         this.schema = merge(this.schema, chunkCopy, {arrayMerge: arrayMerge})
     }
