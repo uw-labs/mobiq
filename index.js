@@ -34,8 +34,12 @@ let job
 const check = (label) => {
     process.stdout.write(icons.info + ' ' + label)
     done = (newLabel) => {
-        process.stdout.clearLine();
-        process.stdout.cursorTo(0);
+        if (process.stdout.clearLine) {
+            process.stdout.clearLine();
+            process.stdout.cursorTo(0);
+        } else {
+            process.stdout.write('\n')
+        }
         logger(icons.success, newLabel || label)
     }
 }
