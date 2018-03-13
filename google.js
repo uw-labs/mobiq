@@ -84,7 +84,7 @@ function arrayMerge(target, source, options) {
         return destination
     }
 
-    destination = uniq(destination, equal)
+    destination = uniq(destination, equal).filter(s => !!s)
 
     destination = merge.all(destination, {arrayMerge: arrayMerge})
 
@@ -92,11 +92,11 @@ function arrayMerge(target, source, options) {
 
 }
 
-const mapTypes = (inObj) => {
-    const obj = Object.assign({}, inObj)
+const mapTypes = (obj) => {
     Object.keys(obj).forEach(key => {
-        if (obj[key] && typeof obj[key] === 'object') mapTypes(obj[key]);
-        else {
+        if (obj[key] && typeof obj[key] === 'object') {
+            mapTypes(obj[key]);
+        } else {
             switch (true) {
                 case obj[key] === false || obj[key] === true: return obj[key]
                 case obj[key] === null: return obj[key] = null
