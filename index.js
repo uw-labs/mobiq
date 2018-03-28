@@ -9,10 +9,16 @@ const google = require('./google')
 const path = require('path')
 const ora = require('ora')
 const zlib = require('zlib')
+const glob = require('glob')
 
 function collect(inVal, memo) {
     const [key, val] = inVal.split('=')
     memo[key]=val
+    return memo;
+}
+
+function arr(inVal, memo) {
+    memo.push(inVal)
     return memo;
 }
 
@@ -64,9 +70,11 @@ program
     .option('-k, --bq-credentials <file>', 'gc credentials file', path.resolve, '')
     .option('--transform-flatten-objects', 'enables flattening of nested hashes into single dimension ones')
     .option('--no-transform-remove-nulls', 'disables removal of null value keys')
-    .option('--transform [file]', 'add transormation stream from file', collect, [])
+    .option('--transform [file]', 'add transformation stream from file', arr, [])
     .option('--bq-option [option]', 'add big query import option key=value', collect, {})
     .option('--dump-schema', 'do not import, just dump schema')
+    .option('--ls-transform', 'list available transformations')
+
 
     .parse(process.argv);
 
@@ -88,12 +96,44 @@ function exit(e) {
     process.exit(1)
 }
 
+function listTransform() {
+
+    info("Available transformations:")
+
+    glob.sync('**/*.js', {cwd: './transform/streams'}).forEach(file => {
+        const f = path.parse(file)
+        logger(' - '+f.dir + '/' + f.name)
+    })
+
+    process.exit(0)
+}
+
+function loadTransform(transformations) {
+    const streams = []
+    transformations.forEach(f => {
+        if (!path.parse(f).ext) {
+            f = './transform/streams/' + f + '.js'
+        }
+        const S = require(f)
+        streams.push(new S())
+    })
+    return streams
+}
+
 (async () => {
     try {
 
         logger()
         logger(`${chalk.blue(package.name)} - ${chalk.green(package.version)}`)
         logger()
+
+        const {lsTransform, transform} = program
+
+        if (lsTransform) {
+            listTransform()
+        }
+
+        const transformStreams = loadTransform(transform)
 
         const {dbQuery, dbSkip, dbBatch, dbCollection, dbLimit} = program
 
@@ -167,6 +207,10 @@ function exit(e) {
                     new (require('./transform/flatten'))(transformSkipArrays)
                 )
             }
+
+            transformStreams.forEach(t => {
+                destination = destination.pipe(t)
+            })
 
             destination.pipe(
                 gl.schema().fromStream()

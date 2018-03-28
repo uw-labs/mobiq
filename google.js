@@ -6,6 +6,8 @@ const merge = require('deepmerge')
 const uniq = require('lodash.uniqwith')
 const equal = require('lodash.isequal')
 const plain = require('lodash.isplainobject')
+const cloneDeep = require('clone-deep');
+
 
 class Google {
     constructor(projectId, keyFilename, user) {
@@ -105,6 +107,7 @@ const mapTypes = (obj) => {
     });
 };
 
+
 class Schema {
     constructor() {
         this.schema = {}
@@ -114,11 +117,8 @@ class Schema {
     }
 
     add(chunk) {
-
-        const chunkCopy = Object.assign({}, chunk)
-
+        const chunkCopy = cloneDeep(chunk)
         mapTypes(chunkCopy)
-
 
         this.schema = merge(this.schema, chunkCopy, {arrayMerge: arrayMerge})
     }
