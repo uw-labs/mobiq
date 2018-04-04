@@ -1,6 +1,17 @@
 # mobiq
 
-A Mongo -> BigQuery importer with nested document and dynamic schema support.
+Mobiq is a tool for importing mongo collections into google's big query, it supports automatic schema recognition and allows for customer transformations to be plugged in at run time.
+
+It dumps data from mongo using cursor stream api, uploads it to gc storage bucket and runs a big query import from there.
+
+## installation
+
+```
+npm i -g --save mobiq
+```
+
+## usage
+>>>>>>> origin/master
 
 ```
   Usage: mobiq [options]
@@ -28,4 +39,29 @@ A Mongo -> BigQuery importer with nested document and dynamic schema support.
     --ls-transform                    list available transformations
     -h, --help                        output usage information
 
+
+```
+
+## using transformations
+
+you can list available transformations with `mobiq --ls-transform`, you can also provide your own and point at the relevant file via `--transform` switch.
+
+A transformation is a node transform stream running in object mode which gets each record in a mongo connection.
+
+Example:
+
+```node.js
+const { Transform } = require('stream');
+
+module.exports = class TimestampFromMongoId extends Transform {
+    constructor() {
+        super({objectMode: true})
+    }
+
+    _transform(chunk, encoding, callback) {
+        chunk.createdOn = new Date(parseInt(chunk.id.substring(0, 8), 16) * 1000);
+        this.push(chunk);
+        callback()
+    }
+}
 ```
