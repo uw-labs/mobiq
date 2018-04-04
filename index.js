@@ -7,9 +7,30 @@ const chalk = require('chalk')
 const icons = require('log-symbols')
 const google = require('./google')
 const path = require('path')
-const ora = require('ora')
+let ora = require('ora')
 const zlib = require('zlib')
 const glob = require('glob')
+const fs = require('fs')
+
+if (!process.stdout.isTTY) {
+    ora = function(str) {
+
+        const instance = {}
+        instance.text = str
+
+        instance.fail = () => {
+            logger(icons.error, instance.text)
+        }
+
+        instance.succeed = () => {
+            logger(icons.success, instance.text)
+        }
+
+        return {
+            start: () => instance
+        }
+    }
+}
 
 function collect(inVal, memo) {
     const [key, val] = inVal.split('=')
@@ -72,10 +93,9 @@ program
     .option('--no-transform-remove-nulls', 'disables removal of null value keys')
     .option('--transform [file]', 'add transformation stream from file', arr, [])
     .option('--bq-option [option]', 'add big query import option key=value', collect, {})
-    .option('--dump-schema', 'do not import, just dump schema')
+    .option('--dump-schema [file]', 'do not import, just dump schema')
+    .option('--schema [file]', 'use schema from file rather than guessing from files')
     .option('--ls-transform', 'list available transformations')
-
-
     .parse(process.argv);
 
 process.on('uncaughtException', exit);
@@ -89,6 +109,7 @@ function exit(e) {
     if (job && job.cancel) {
         job.cancel()
     }
+
     logger()
     logger(icons.warning, 'there might be a file left in your bucket that did not clear up')
     logger()
@@ -153,6 +174,7 @@ function loadTransform(transformations) {
 
         const {bqBucket, bqCredentials, bqDataset, bqProject} = program
         let bqTable = program.bqTable || dbCollection
+        let suppliedSchema
         bqTable = bqTable.replace(/[^a-z0-9]/, '_')
 
 
@@ -162,6 +184,11 @@ function loadTransform(transformations) {
         label('dataset:', bqDataset)
         label('table:', bqTable)
         label('user:', gl.user)
+
+        if (program.schema) {
+            label('schema:', program.schema)
+            suppliedSchema = JSON.parse(fs.readFileSync(program.schema))
+        }
 
         check(`checking bucket ${chalk.blue(bqBucket)}`)
         const bucket = await gl.bucket(bqBucket)
@@ -212,9 +239,27 @@ function loadTransform(transformations) {
                 destination = destination.pipe(t)
             })
 
-            destination.pipe(
-                gl.schema().fromStream()
-            )
+            if (!suppliedSchema) {
+                let schemaStream = destination.pipe(
+                    gl.schema().fromStream()
+                )
+
+                if (program.dumpSchema) {
+
+                    schemaStream.on('finish', () => {
+                        fs.writeFileSync(program.dumpSchema, JSON.stringify(gl.schema().get()))
+                        logger()
+                        info(`schema written to ${chalk.blue(program.dumpSchema)}`)
+                        process.exit(0)
+                    })
+
+                    schemaStream.on('error', (e) => {
+                        loader.fail()
+                        throw e
+                    })
+
+                }
+            }
 
             destination.pipe(
                 new (require('./transform/json'))
@@ -241,7 +286,8 @@ function loadTransform(transformations) {
         })
 
         if (program.dumpSchema) {
-            console.log(require('util').inspect(gl.schema().get(), false, null))
+            fs.writeFileSync(program.dumpSchema, JSON.stringify(gl.schema().get()))
+            info(`schema written to ${chalk.blue(program.dumpSchema)}`)
             process.exit(0)
         }
 
@@ -261,7 +307,7 @@ function loadTransform(transformations) {
 
             const loader = ora(`importing data into ${chalk.blue(`${bqProject}://${bqDataset}/${bqTable}`)}`).start();
             try {
-                [job] = await gl.load(bqDataset, bqTable, file, gl.schema().get(), bqOption)
+                [job] = await gl.load(bqDataset, bqTable, file, suppliedSchema || gl.schema().get(), bqOption)
             } catch(e) {
                 return x(e)
             }
