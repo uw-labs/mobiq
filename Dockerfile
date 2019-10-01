@@ -1,4 +1,4 @@
-FROM node:9
+FROM node:12-alpine
 
 RUN mkdir -p /opt/mobiq
 
