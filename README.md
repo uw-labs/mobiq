@@ -11,7 +11,6 @@ npm i -g --save mobiq
 ```
 
 ## usage
->>>>>>> origin/master
 
 ```
   Usage: mobiq [options]
