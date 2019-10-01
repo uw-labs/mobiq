@@ -1,4 +1,5 @@
-const gl = require('google-cloud')
+const {Storage} = require('@google-cloud/storage');
+const {BigQuery} = require('@google-cloud/bigquery');
 const fs = require('fs');
 const { Writable } = require('stream')
 const schemaGenerator = require('generate-schema').bigquery
@@ -14,12 +15,18 @@ class Google {
 
         this.projectSettings = {
             projectId,
-            keyFilename,
+            keyFilename
         }
 
         this.user = user
-        this.storage = gl.storage(this.projectSettings)
-        this.bq = gl.bigquery(this.projectSettings)
+        this.storage = new Storage({
+            projectId,
+            keyFilename,
+        })
+        this.bq = new BigQuery({
+            projectId,
+            keyFilename,
+        })
         this._schema = new Schema()
     }
 
@@ -31,6 +38,8 @@ class Google {
         if (!exists) {
             throw new Error(`bucket ${bucketName} does not exist`)
         }
+
+
 
         return this.bucket = bucket
     }
@@ -50,6 +59,7 @@ class Google {
     }
 
     async load(dataset, table, file, schema, config = {}) {
+
         const loadConfiguration = Object.assign({
             sourceFormat: 'NEWLINE_DELIMITED_JSON',
             writeDisposition: 'WRITE_TRUNCATE',
@@ -59,7 +69,7 @@ class Google {
             }
         }, config)
 
-        return await this.bq.dataset(dataset).table(table).import(file, loadConfiguration)
+        return await this.bq.dataset(dataset).table(table).createLoadJob(file, loadConfiguration)
     }
 }
 

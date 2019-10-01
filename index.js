@@ -313,6 +313,7 @@ function loadTransform(transformations) {
             }
 
             job.on('error', e => {
+
                 loader.fail()
                 return x(e)
             })
