@@ -167,7 +167,8 @@ function loadTransform(transformations) {
         label('limit:', dbLimit)
         label('batch:', dbBatch)
 
-        const rowCount = await db.rowCount(dbQuery, dbSkip)
+        const dbQueryObj = JSON.parse(dbQuery)
+        const rowCount = await db.rowCount(dbQueryObj, dbSkip)
         label('rows:', rowCount)
 
         logger()
@@ -200,7 +201,7 @@ function loadTransform(transformations) {
 
         logger()
 
-        stream = db.stream(dbQuery, dbSkip, dbBatch, dbLimit)
+        stream = db.stream(dbQueryObj, dbSkip, dbBatch, dbLimit)
 
         await new Promise(r => {
 
