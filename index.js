@@ -167,7 +167,7 @@ function loadTransform(transformations) {
         label('limit:', dbLimit)
         label('batch:', dbBatch)
 
-        const dbQueryObj = JSON.parse(dbQuery)
+        const dbQueryObj = JSON.parse(dbQuery || '{}')
         const rowCount = await db.rowCount(dbQueryObj, dbSkip)
         label('rows:', rowCount)
 
